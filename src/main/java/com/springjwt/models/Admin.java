@@ -1,17 +1,18 @@
 package com.springjwt.models;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Entity;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
-@Getter
-@Setter
+@Data
 @Entity
 public class Admin extends User {
-    @Size(max = 20)
-    private String type ;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
 }

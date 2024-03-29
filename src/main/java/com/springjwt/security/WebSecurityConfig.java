@@ -53,12 +53,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/admins/**").permitAll()
                 .antMatchers("/user/**").permitAll()
                 .antMatchers("/signup").permitAll()
-                .antMatchers("/users").permitAll()
+                .antMatchers("/users/**").permitAll()
                 .antMatchers("/user/**").permitAll()
                 .antMatchers("/addUser/**").permitAll()
                 .antMatchers("/deleteUser/**").permitAll()
                 .antMatchers("/getUserById/**").permitAll()
                 .antMatchers("/update/**").permitAll()
+                .antMatchers("/api/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .formLogin()
@@ -70,48 +71,18 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Headers"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Autoriser ces origines
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Autoriser ces méthodes
+        configuration.setAllowedHeaders(Arrays.asList("*")); // Autoriser tous les en-têtes
+        configuration.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Headers","Access-Control-Allow-Methods"));
+        configuration.setAllowCredentials(true); // Autoriser les cookies
+        configuration.setMaxAge(3600L); // Durée maximale de la requête préalable (preflight)
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
+
         return source;
     }
+
+
 }
-
-	/*@Bean
-	public JavaMailSender javaMailSender() {
-		JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-		mailSender.setHost("smtp.gmail.com");
-		mailSender.setPort(587);
-
-		mailSender.setUsername("nawreselou2382@gmail.com");
-		mailSender.setPassword("Zoo23821014");
-
-		Properties props = mailSender.getJavaMailProperties();
-		props.put("mail.transport.protocol", "smtp");
-		props.put("mail.smtp.auth", "true");
-		props.put("mail.smtp.starttls.enable", "true");
-		props.put("mail.debug", "true");
-
-		return mailSender;
-	}
-	@Bean
-	public Session mailSession() {
-		Properties props = new Properties();
-		props.put("mail.smtp.auth", "true");
-		props.put("mail.smtp.starttls.enable", "true");
-		props.put("mail.smtp.host", "smtp.gmail.com");
-		props.put("mail.smtp.port", "587");
-		props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
-
-		return Session.getInstance(props, new javax.mail.Authenticator() {
-			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication("nawreselou2382@gmail.com", "Zoo23821014");
-			}
-		});
-	}*/
-

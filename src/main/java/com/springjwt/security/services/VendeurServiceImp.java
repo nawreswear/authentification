@@ -23,6 +23,39 @@ public class VendeurServiceImp implements VendeurService {
         return null;
     }
     @Override
+    public void processVendeurRequest(Vendeur vendeur) {
+        // Perform validation on the vendeur data (e.g., check for required fields)
+        if (!isValidVendeur(vendeur)) {
+            throw new IllegalArgumentException("Invalid vendeur data");
+        }
+        vr.save(vendeur);
+    }
+    @Override
+    public List<Vendeur> getAllVendeurRequests() {
+        return vr.findAll(); // Assuming vendeurRepository is your repository for managing vendeur entities
+    }
+    private boolean isValidVendeur(Vendeur vendeur) {
+        // Perform validation logic here
+        return vendeur != null
+                && isValidString(String.valueOf(vendeur.getId()))
+                && isValidString(vendeur.getNom())
+                && isValidString(vendeur.getEmail())
+                && isValidString(vendeur.getPassword())
+                && isValidString(vendeur.getPrenom())
+                && isValidString(String.valueOf(vendeur.getTel()))
+                && isValidString(vendeur.getType())
+                && vendeur.getCodePostal() != null
+                && isValidString(vendeur.getPays())
+                && isValidString(vendeur.getVille())
+                && vendeur.getCin() != null
+                && isValidString(vendeur.getPhoto());
+    }
+
+    private boolean isValidString(String value) {
+        return value != null && !value.isEmpty();
+    }
+
+    @Override
     public Vendeur update(Vendeur updatedVendeur) {
         if (vr != null) {
             Vendeur existingVendeur = vr.findById(updatedVendeur.getId())
@@ -39,6 +72,7 @@ public class VendeurServiceImp implements VendeurService {
             existingVendeur.setCin(updatedVendeur.getCin());
             existingVendeur.setLongitude(updatedVendeur.getLongitude());
             existingVendeur.setLatitude(updatedVendeur.getLatitude());
+            existingVendeur.setPhoto(updatedVendeur.getPhoto());
             return vr.save(existingVendeur);
         }
         return null;

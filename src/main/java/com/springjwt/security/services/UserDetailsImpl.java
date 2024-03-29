@@ -31,7 +31,6 @@ public class UserDetailsImpl implements UserDetails {
     @Getter
     String photo;
     private String password;
-    // private boolean enabled;
     private Collection<? extends GrantedAuthority> authorities;
 
     public UserDetailsImpl(Long id, String nom, String prenom,String type, int Tel, String email, String photo,String password, Collection<? extends GrantedAuthority> authorities) {

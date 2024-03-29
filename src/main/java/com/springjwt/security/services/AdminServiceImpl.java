@@ -1,6 +1,7 @@
 package com.springjwt.security.services;
 
 import com.springjwt.models.Admin;
+import com.springjwt.models.Vendeur;
 import com.springjwt.repository.AdminRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,22 +20,26 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public Admin updateAdmin(Long userId, Admin updatedAdmin) {
-        Admin existingAdmin = adminRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Admin not found with id: " + userId));
-        existingAdmin.setType(updatedAdmin.getType());
-        existingAdmin.setNom(updatedAdmin.getNom());
-        existingAdmin.setPrenom(updatedAdmin.getPrenom());
-        existingAdmin.setTel(updatedAdmin.getTel());
-        existingAdmin.setEmail(updatedAdmin.getEmail());
-        existingAdmin.setPassword(updatedAdmin.getPassword());
-        existingAdmin.setCodePostal(updatedAdmin.getCodePostal());
-        existingAdmin.setPays(updatedAdmin.getPays());
-        existingAdmin.setVille(updatedAdmin.getVille());
-        existingAdmin.setCin(updatedAdmin.getCin());
-        existingAdmin.setLongitude(updatedAdmin.getLongitude());
-        existingAdmin.setLatitude(updatedAdmin.getLatitude());
-        return adminRepository.save(existingAdmin);
+    public Admin update(Admin updatedAdmin) {
+        if (adminRepository != null) {
+            Admin existingVendeur = adminRepository.findById(updatedAdmin.getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Vendeur not found with id: " + updatedAdmin.getId()));
+            existingVendeur.setType(updatedAdmin.getType());
+            existingVendeur.setNom(updatedAdmin.getNom());
+            existingVendeur.setPrenom(updatedAdmin.getPrenom());
+            existingVendeur.setTel(updatedAdmin.getTel());
+            existingVendeur.setEmail(updatedAdmin.getEmail());
+            existingVendeur.setPassword(updatedAdmin.getPassword());
+            existingVendeur.setCodePostal(updatedAdmin.getCodePostal());
+            existingVendeur.setPays(updatedAdmin.getPays());
+            existingVendeur.setVille(updatedAdmin.getVille());
+            existingVendeur.setCin(updatedAdmin.getCin());
+            existingVendeur.setLongitude(updatedAdmin.getLongitude());
+            existingVendeur.setLatitude(updatedAdmin.getLatitude());
+            existingVendeur.setPhoto(updatedAdmin.getPhoto());
+            return adminRepository.save(existingVendeur);
+        }
+        return null;
     }
     @Override
     public void deleteAdmin(Long userId) {

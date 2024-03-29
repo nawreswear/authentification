@@ -9,9 +9,9 @@ public interface VendeurService {
 
     Vendeur save(Vendeur v);
     List<Vendeur> getAll();
-
     Vendeur update(Vendeur updatedVendeur);
-
     void deletevendeur(Long id);
     Vendeur getById(Long id);
+    void processVendeurRequest(Vendeur vendeur);
+    List<Vendeur> getAllVendeurRequests();
 }

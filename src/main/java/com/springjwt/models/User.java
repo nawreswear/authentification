@@ -3,16 +3,13 @@ package com.springjwt.models;
 import javax.persistence.*;
 import javax.validation.constraints.*;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.validator.constraints.UniqueElements;
+
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
 @Inheritance(strategy = InheritanceType.JOINED)
 public class User {
@@ -66,6 +63,7 @@ public class User {
     private double longitude;
     private double latitude;
 
+    @Column(length = 1000)
     private String photo;
 
     public void setPhoto(String photo) {
@@ -73,5 +71,8 @@ public class User {
     }
 
     public void getPhoto(String photo) {
+    }
+    public User() {
+        // Constructeur par défaut nécessaire pour la désérialisation JSON
     }
 }

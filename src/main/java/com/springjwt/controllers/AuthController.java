@@ -16,6 +16,7 @@ import com.springjwt.security.jwt.JwtUtils;
 import com.springjwt.security.services.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
@@ -24,6 +25,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +38,9 @@ import javax.mail.MessagingException;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:4200")
@@ -70,8 +74,7 @@ public class AuthController {
     @Autowired
     private UserDetailsServiceImpl userService;
 
-    @Autowired
-    private EmailService emailService;
+
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {
@@ -94,11 +97,13 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Authentication failed: " + e.getMessage());
         }
     }
+
     @GetMapping("/users")
     public ResponseEntity<?> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
+
     @PostMapping("/addUser")
     public ResponseEntity<User> addUser(@RequestBody User user) {
         User createdUser = userService.save(user);
@@ -107,12 +112,41 @@ public class AuthController {
 
     @GetMapping("getUserById/{userId}")
     public User getUserById(@PathVariable Long userId) {
+
         return userService.getUserById(userId);
     }
+
     @GetMapping("/vendeurs")
     public ResponseEntity<?> getAllVendeurs() {
         List<Vendeur> vendeurs = vendeurService.getAll();
         return ResponseEntity.ok(vendeurs);
+    }
+    @PostMapping("/checkEmailUnique")
+    public ResponseEntity<?> checkEmailUnique(@RequestBody String email) {
+        try {
+            // Vérifiez si l'e-mail est unique en appelant le service approprié
+            boolean isUnique = userService.isEmailUnique(email);
+            if (isUnique) {
+                return ResponseEntity.ok("Email is unique.");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email is already in use!");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error.");
+        }
+    }
+    @GetMapping("/api/{nomuser}")
+    public ResponseEntity<Object> findUserIdByNom(@PathVariable String nomuser) {
+        try {
+            Long userId = userService.findUserIdByNom(nomuser);
+            return ResponseEntity.ok(userId);
+        } catch (UsernameNotFoundException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Utilisateur non trouvé avec le nom : " + nomuser);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Une erreur s'est produite lors de la recherche de l'utilisateur.");
+        }
     }
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
@@ -134,8 +168,7 @@ public class AuthController {
                 admin.setTel(signUpRequest.getTel());
                 admin.setType(signUpRequest.getType());
                 admin.setCin(signUpRequest.getCin());
-                admin.getPhoto(signUpRequest.getPhoto());
-                admin.getPhoto(signUpRequest.getPhoto());
+                admin.setPhoto(signUpRequest.getPhoto());
                 admin.setPassword(encoder.encode(signUpRequest.getPassword()));
                 newUser = admin;
                 adminService.save(admin);
@@ -148,9 +181,8 @@ public class AuthController {
                 vendeur.setTel(signUpRequest.getTel());
                 vendeur.setType(signUpRequest.getType());
                 vendeur.setCin(signUpRequest.getCin());
-                vendeur.getPhoto(signUpRequest.getPhoto());
+                vendeur.setPhoto(signUpRequest.getPhoto());
                 vendeur.setPassword(encoder.encode(signUpRequest.getPassword()));
-
                 newUser = vendeur;
                 vendeurService.save(vendeur);
             } else {
@@ -161,26 +193,31 @@ public class AuthController {
                 user.setTel(signUpRequest.getTel());
                 user.setCin(signUpRequest.getCin());
                 user.setType("user");
+                user.setPhoto(signUpRequest.getPhoto());
                 user.setPassword(encoder.encode(signUpRequest.getPassword()));
-                user.getPhoto(signUpRequest.getPhoto());
                 newUser = user;
                 userService.save(user);
             }
             //return ResponseEntity.ok().build();
 // Générez le token JWT pour cet utilisateur nouvellement enregistré
+            // Générer le token JWT pour l'utilisateur nouvellement enregistré
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(signUpRequest.getEmail(), signUpRequest.getPassword()));
             SecurityContextHolder.getContext().setAuthentication(authentication);
             String jwt = jwtUtils.generateJwtToken(authentication);
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-// Créez une réponse contenant le token JWT et retournez-la
-// Utilisez les informations appropriées pour construire JwtResponse
-            return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getId(), userDetails.getUsername(), userDetails.getEmail(), userDetails.getType()));
+
+            // Créer une réponse contenant le token JWT et l'identifiant de l'utilisateur
+            JwtResponse jwtResponse = new JwtResponse(jwt, userDetails.getId(), userDetails.getPassword(), userDetails.getEmail(), userDetails.getType());
+
+            // Retourner la réponse avec le code de statut OK
+            return ResponseEntity.ok(jwtResponse);
         } catch (DataIntegrityViolationException e) {
             // Gérer les erreurs de violation d'intégrité des données (par exemple, e-mail déjà utilisé)
             return ResponseEntity.status(HttpStatus.CONFLICT).body(new MessageResponse("Error: Data integrity violation."));
         }
     }
+
     @GetMapping("/getUserByEmail/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         User user = userService.getUserByEmail(email);
@@ -190,6 +227,30 @@ public class AuthController {
             return ResponseEntity.notFound().build();
         }
     }
+    @PutMapping("/users/updateType/{userId}")
+    public ResponseEntity<?> updateUserType(@PathVariable Long userId) {
+        if (!userRepository.existsById(userId)) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: User not found with id " + userId));
+        }
+
+        // Récupérer l'utilisateur existant
+        User existingUser = userRepository.findById(userId).orElse(null);
+        if (existingUser == null) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: User not found with id " + userId));
+        }
+
+        // Mettre à jour le type de l'utilisateur
+        existingUser.setType("vendeur");
+        // Enregistrer les modifications dans la base de données
+        userRepository.save(existingUser);
+
+        return ResponseEntity.ok(new MessageResponse("Utilisateur mis à jour avec succès !"));
+    }
+
     @PutMapping("/update/{userId}")
     public ResponseEntity<?> updateUser(@PathVariable Long userId, @Valid @RequestBody SignupRequest signUpRequest) {
         if (!userRepository.existsById(userId)) {
@@ -197,7 +258,6 @@ public class AuthController {
                     .badRequest()
                     .body(new MessageResponse("Error: User not found with id " + userId));
         }
-
         User updatedUser;
         if (signUpRequest.getType().toLowerCase().startsWith("admin")) {
             Admin admin = new Admin();
@@ -213,9 +273,10 @@ public class AuthController {
             admin.setVille(signUpRequest.getVille());
             admin.setPays(signUpRequest.getPays());
             admin.setCodePostal(signUpRequest.getCodePostal());
+            admin.setPhoto(signUpRequest.getPhoto());
             admin.setPassword(encoder.encode(signUpRequest.getPassword()));
             updatedUser = admin;
-            adminService.updateAdmin(admin.getId(),admin);
+            adminService.update((Admin) updatedUser);
         } else if (signUpRequest.getType().toLowerCase().startsWith("vendeur")) {
             Vendeur vendeur = new Vendeur();
             vendeur.setId(userId);
@@ -230,9 +291,10 @@ public class AuthController {
             vendeur.setVille(signUpRequest.getVille());
             vendeur.setPays(signUpRequest.getPays());
             vendeur.setCodePostal(signUpRequest.getCodePostal());
+            vendeur.setPhoto(signUpRequest.getPhoto());
             vendeur.setPassword(encoder.encode(signUpRequest.getPassword()));
             updatedUser = vendeur;
-            vendeurService.update(vendeur);
+            vendeurService.update((Vendeur) updatedUser);
         } else {
             User user = new User();
             user.setId(userId);
@@ -247,12 +309,16 @@ public class AuthController {
             user.setVille(signUpRequest.getVille());
             user.setPays(signUpRequest.getPays());
             user.setCodePostal(signUpRequest.getCodePostal());
+            user.setPhoto(signUpRequest.getPhoto());
             user.setPassword(encoder.encode(signUpRequest.getPassword()));
             updatedUser = user;
-            userService.update(user);
+            userService.update(updatedUser);
         }
+
+
         return ResponseEntity.ok(new MessageResponse("Utilisateur mis à jour avec succès !"));
     }
+
     @DeleteMapping("/deleteUser/{userId}")
     public ResponseEntity<?> deleteUser(@PathVariable Long userId) {
         if (!userRepository.existsById(userId)) {
@@ -263,6 +329,7 @@ public class AuthController {
         userService.deleteUser(userId);
         return ResponseEntity.ok(new MessageResponse("User deleted successfully."));
     }
+
     @DeleteMapping("/deleteAdmin/{adminId}")
     public ResponseEntity<?> deleteAdmin(@PathVariable Long adminId) {
         if (!adminRepository.existsById(adminId)) {
@@ -288,7 +355,7 @@ public class AuthController {
     }
 
 
-    @GetMapping("/vendeurs/{vendeurId}")
+    @GetMapping("/getVendeurById/{vendeurId}")
     public ResponseEntity<?> getVendeurById(@PathVariable Long vendeurId) {
         Vendeur vendeur = vendeurService.getById(vendeurId);
         if (vendeur == null) {
@@ -296,6 +363,7 @@ public class AuthController {
         }
         return ResponseEntity.ok(vendeur);
     }
+
     @GetMapping("/admins")
     public ResponseEntity<?> getAllAdmins() {
         List<Admin> admins = adminService.getAll();
@@ -310,37 +378,79 @@ public class AuthController {
         }
         return ResponseEntity.ok(admin);
     }
-    //  @Autowired
-    // private ConfirmationTokenRepository confirmationTokenRepository;
-
-   /* @RequestMapping(value="/confirm-account", method= {RequestMethod.GET, RequestMethod.POST})
-    public ModelAndView confirmUserAccount(ModelAndView modelAndView, @RequestParam("token")String confirmationToken)
-    {
-        ConfirmationToken token = confirmationTokenRepository.findByConfirmationToken(confirmationToken);
-
-        if(token != null)
-        {
-            User user = userRepository.findByEmailIgnoreCase(token.getUserEntity().getEmail());
-            user.setEnabled(true);
-            userRepository.save(user);
-            modelAndView.setViewName("accountVerified");
+    @PostMapping("/addVendeur")
+    public ResponseEntity<Vendeur> addVendeur(@RequestBody Vendeur vendeur) {
+        Vendeur savedVendeur = vendeurService.save(vendeur);
+        if (savedVendeur != null) {
+            return new ResponseEntity<>(savedVendeur, HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        else
-        {
-            modelAndView.addObject("message","The link is invalid or broken!");
-            modelAndView.setViewName("error");
+    }
+    @PostMapping("/admin/vendeur-request")
+    public ResponseEntity<String> sendVendeurRequestToAdmin(@RequestBody Vendeur vendeur) {
+        try {
+            // Process the vendeur request (e.g., save to database)
+            vendeurService.processVendeurRequest(vendeur);
+            return ResponseEntity.ok("Vendeur request received successfully.");
+        } catch (Exception e) {
+            // Handle any errors that may occur
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error processing vendeur request: " + e.getMessage());
+        }
+    }
+
+    /*@GetMapping("/getUserIdByName/{nom}")
+    public ResponseEntity<Long> getUserIdByName(@PathVariable String nom) {
+        Long userId = userService.getUserIdByName(nom);
+        return ResponseEntity.ok(userId);
+    }*/
+    @GetMapping("/getUserIdByName/{nom}")
+    public ResponseEntity<Map<String, Object>> getUserIdByName(@PathVariable String nom) {
+        // Récupérez l'ID de l'utilisateur en fonction du nom
+        Long userId = userService.getUserIdByName(nom);
+
+        // Créez une réponse JSON avec l'ID de l'utilisateur
+        Map<String, Object> response = new HashMap<>();
+        if (userId != null) {
+            response.put("success", true);
+            response.put("userId", userId);
+        } else {
+            // Si aucun utilisateur n'est trouvé avec le nom donné, renvoyez un message d'erreur
+            response.put("success", false);
+            response.put("message", "Aucun utilisateur trouvé avec le nom donné");
         }
 
-        return modelAndView;
-    }*/
-   /* private void sendActivationEmail(String email) throws MessagingException, UnsupportedEncodingException {
-        SimpleMailMessage mailMessage = new SimpleMailMessage();
-        mailMessage.setTo(email);
-        mailMessage.setSubject("Activation de compte");
-        mailMessage.setFrom("nawreselou2382@gmail.com");
-        mailMessage.setText("Veuillez cliquer sur le lien suivant pour activer votre compte : http://localhost:3003/confirm-account?token=token_value");
-  emailService.sendVerificationEmail(signUpRequest.getEmail(), "743185");
+        // Retournez la réponse avec un code de statut approprié
+        return ResponseEntity.ok(response);
+    }
 
-        return ResponseEntity.ok().build();(mailMessage);
-    }*/
+
+
+    @GetMapping("/admin/vendeur-requests")
+    public ResponseEntity<List<Vendeur>> getAllVendeurRequests() {
+        try {
+            List<Vendeur> vendeurRequests = vendeurService.getAllVendeurRequests();
+            return ResponseEntity.ok(vendeurRequests);
+        } catch (Exception e) {
+            // Handle any errors that may occur
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(null);
+        }
+    }
+
+
+    @PutMapping("/updateVendeur/{vendeurId}")
+    public ResponseEntity<Vendeur> updateVendeur(@RequestBody Vendeur updatedVendeur) {
+        Vendeur vendeur = vendeurService.update(updatedVendeur);
+        if (vendeur != null) {
+            return new ResponseEntity<>(vendeur, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+
+
+
 }
