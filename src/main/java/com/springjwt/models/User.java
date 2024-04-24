@@ -73,6 +73,8 @@ public class User {
     public void getPhoto(String photo) {
     }
     public User() {
-        // Constructeur par défaut nécessaire pour la désérialisation JSON
+    }
+    public User(Long id) {
+   this.id=id;
     }
 }

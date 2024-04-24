@@ -1,6 +1,8 @@
 package com.springjwt.security.services;
 import com.springjwt.models.User;
+import com.springjwt.models.Vendeur;
 import com.springjwt.repository.UserRepository;
+import com.springjwt.repository.VendeurRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -8,7 +10,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +24,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private VendeurRepository vendeurRepository;
+
+    @Autowired
+    private VendeurService  vendeurSerive;
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(username);
@@ -47,7 +57,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     public void update(User updatedUser) {
         userRepository.findById(updatedUser.getId()).ifPresent(existingUser -> {
-            // Update other fields
             existingUser.setType(updatedUser.getType());
             existingUser.setNom(updatedUser.getNom());
             existingUser.setPrenom(updatedUser.getPrenom());
@@ -87,16 +96,25 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         User user = userRepository.findByNom(nom);
         return user.getId();
     }
-    // @Transactional
+    @Transactional
     public User updateUserType(Long userId) {
+        // Vérifiez si userId est null
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
+
         // Recherchez l'utilisateur par son ID
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
         // Mettez à jour le type de l'utilisateur
         user.setType("vendeur");
-        // Enregistrez les modifications dans la base de données
+
+        // Enregistrez les modifications de l'utilisateur dans la base de données
         return userRepository.save(user);
     }
+
+
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }

@@ -173,19 +173,19 @@ public class AuthController {
                 newUser = admin;
                 adminService.save(admin);
 
-            } else if (type.startsWith("vendeur")) {
+            } else  {//if (type.startsWith("vendeur"))
                 Vendeur vendeur = new Vendeur();
                 vendeur.setNom(signUpRequest.getNom());
                 vendeur.setPrenom(signUpRequest.getPrenom());
                 vendeur.setEmail(signUpRequest.getEmail());
                 vendeur.setTel(signUpRequest.getTel());
-                vendeur.setType(signUpRequest.getType());
+                vendeur.setType("user");
                 vendeur.setCin(signUpRequest.getCin());
                 vendeur.setPhoto(signUpRequest.getPhoto());
                 vendeur.setPassword(encoder.encode(signUpRequest.getPassword()));
                 newUser = vendeur;
                 vendeurService.save(vendeur);
-            } else {
+            } /*else {
                 user = new User();
                 user.setNom(signUpRequest.getNom());
                 user.setPrenom(signUpRequest.getPrenom());
@@ -197,7 +197,7 @@ public class AuthController {
                 user.setPassword(encoder.encode(signUpRequest.getPassword()));
                 newUser = user;
                 userService.save(user);
-            }
+            }*/
             //return ResponseEntity.ok().build();
 // Générez le token JWT pour cet utilisateur nouvellement enregistré
             // Générer le token JWT pour l'utilisateur nouvellement enregistré
@@ -228,27 +228,10 @@ public class AuthController {
         }
     }
     @PutMapping("/users/updateType/{userId}")
+
     public ResponseEntity<?> updateUserType(@PathVariable Long userId) {
-        if (!userRepository.existsById(userId)) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: User not found with id " + userId));
-        }
-
-        // Récupérer l'utilisateur existant
-        User existingUser = userRepository.findById(userId).orElse(null);
-        if (existingUser == null) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: User not found with id " + userId));
-        }
-
-        // Mettre à jour le type de l'utilisateur
-        existingUser.setType("vendeur");
-        // Enregistrer les modifications dans la base de données
-        userRepository.save(existingUser);
-
-        return ResponseEntity.ok(new MessageResponse("Utilisateur mis à jour avec succès !"));
+        User updatedUser = userService.updateUserType(userId);
+        return ResponseEntity.ok(updatedUser);
     }
 
     @PutMapping("/update/{userId}")
@@ -407,24 +390,21 @@ public class AuthController {
     }*/
     @GetMapping("/getUserIdByName/{nom}")
     public ResponseEntity<Map<String, Object>> getUserIdByName(@PathVariable String nom) {
-        // Récupérez l'ID de l'utilisateur en fonction du nom
-        Long userId = userService.getUserIdByName(nom);
-
-        // Créez une réponse JSON avec l'ID de l'utilisateur
         Map<String, Object> response = new HashMap<>();
-        if (userId != null) {
-            response.put("success", true);
-            response.put("userId", userId);
-        } else {
-            // Si aucun utilisateur n'est trouvé avec le nom donné, renvoyez un message d'erreur
-            response.put("success", false);
-            response.put("message", "Aucun utilisateur trouvé avec le nom donné");
+        try {
+            Long userId = userService.getUserIdByName(nom);
+            if (userId != null) {
+                response.put("userId", userId);
+                return ResponseEntity.ok().body(response);
+            } else {
+                response.put("message", "Aucun utilisateur trouvé avec le nom donné");
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            response.put("message", "Une erreur s'est produite lors de la récupération de l'ID de l'utilisateur");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-
-        // Retournez la réponse avec un code de statut approprié
-        return ResponseEntity.ok(response);
     }
-
 
 
     @GetMapping("/admin/vendeur-requests")
@@ -438,8 +418,6 @@ public class AuthController {
                     .body(null);
         }
     }
-
-
     @PutMapping("/updateVendeur/{vendeurId}")
     public ResponseEntity<Vendeur> updateVendeur(@RequestBody Vendeur updatedVendeur) {
         Vendeur vendeur = vendeurService.update(updatedVendeur);
