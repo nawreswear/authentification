@@ -4,9 +4,7 @@ import javax.persistence.*;
 import javax.validation.constraints.*;
 
 import lombok.*;
-import org.hibernate.validator.constraints.UniqueElements;
 
-import java.util.List;
 
 @Entity
 @Data

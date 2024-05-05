@@ -17,6 +17,6 @@ public interface UserDetailsService {
    User getUserByEmail(String email);
     User updateUserType(Long userId);
    Long getUserIdByName(String nom) ;
-    //Long findUserIdByNom(String nom);
+
 
 }

@@ -29,6 +29,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Autowired
     private VendeurService  vendeurSerive;
+
+
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(username);
@@ -38,6 +41,9 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return UserDetailsImpl.build(user.getType(), user);
     }
 
+    public User findPhotoByNo(String nom) {
+        return userRepository.findPhotobyuser(nom); // Assurez-vous que cette méthode retourne une chaîne de caractères
+    }
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé avec l'ID : " + userId));
