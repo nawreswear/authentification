@@ -222,9 +222,13 @@ public class AuthController {
         }
     }
     @PutMapping("/users/updateType/{userId}")
-
     public ResponseEntity<?> updateUserType(@PathVariable Long userId) {
         User updatedUser = userService.updateUserType(userId);
+        return ResponseEntity.ok(updatedUser);
+    }
+    @PutMapping("/users/updatevendeurType/{userId}")
+    public ResponseEntity<?> updateVendeurType(@PathVariable Long userId) {
+        User updatedUser = userService.updateVendeurType(userId);
         return ResponseEntity.ok(updatedUser);
     }
 
@@ -377,11 +381,6 @@ public class AuthController {
         }
     }
 
-    /*@GetMapping("/getUserIdByName/{nom}")
-    public ResponseEntity<Long> getUserIdByName(@PathVariable String nom) {
-        Long userId = userService.getUserIdByName(nom);
-        return ResponseEntity.ok(userId);
-    }*/
     @GetMapping("/getUserIdByName/{nom}")
     public ResponseEntity<Map<String, Object>> getUserIdByName(@PathVariable String nom) {
         Map<String, Object> response = new HashMap<>();

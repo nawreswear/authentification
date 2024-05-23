@@ -11,7 +11,6 @@ import com.springjwt.models.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>{
-    // Optional<User> findByNom(String nom);
 
     Boolean existsByEmail(String email);
 

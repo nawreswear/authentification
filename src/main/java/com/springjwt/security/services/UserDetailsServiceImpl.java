@@ -120,7 +120,23 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         return userRepository.save(user);
     }
 
+    @Transactional
+    public User updateVendeurType(Long userId) {
+        // Vérifiez si userId est null
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID cannot be null");
+        }
 
+        // Recherchez l'utilisateur par son ID
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Vendeur not found with id: " + userId));
+
+        // Mettez à jour le type de l'utilisateur
+        user.setType("user");
+
+        // Enregistrez les modifications de l'utilisateur dans la base de données
+        return userRepository.save(user);
+    }
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email);
     }
